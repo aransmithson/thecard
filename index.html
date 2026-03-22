@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a1a0f">
+<title>THE CARD — Golf Scorecard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a1a0f;
+  --card: #0f261a;
+  --card-alt: #132e1f;
+  --border: #1a3d28;
+  --border-light: #2a5a3d;
+  --green: #2ecc71;
+  --green-dark: #1a8a4a;
+  --green-muted: #1d6b40;
+  --gold: #d4a843;
+  --gold-dim: #a07e30;
+  --white: #f0f5f1;
+  --muted: #8aab96;
+  --muted-dark: #5a7a66;
+  --red: #e74c3c;
+  --red-soft: #c0392b;
+  --blue: #3498db;
+  --birdie: #2ecc71;
+  --eagle: #f39c12;
+  --bogey: #e67e22;
+  --double: #e74c3c;
+  --par: #8aab96;
+  --font-display: 'Playfair Display', serif;
+  --font-body: 'DM Sans', 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { -webkit-text-size-adjust: 100%; background: var(--bg); }
+body { font-family: var(--font-body); background: var(--bg); color: var(--white); min-height: 100vh; min-height: 100dvh; overflow-x: hidden; }
+input, button, select { font-family: inherit; }
+input { font-size: 16px !important; }
+button { cursor: pointer; border: none; background: none; color: inherit; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.texture { position: fixed; inset: 0; opacity: 0.025; pointer-events: none; background-image: radial-gradient(var(--green) 1px, transparent 1px); background-size: 24px 24px; z-index: 0; }
+
+header { padding: 14px 16px 12px; border-bottom: 1px solid var(--border); background: linear-gradient(180deg, var(--card-alt), var(--bg)); position: sticky; top: 0; z-index: 50; }
+header .inner { display: flex; align-items: center; justify-content: space-between; gap: 8px; max-width: 600px; margin: 0 auto; }
+header .logo { display: flex; align-items: center; gap: 8px; }
+header .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px #2ecc7166; flex-shrink: 0; }
+header h1 { font-family: var(--font-display); font-size: 18px; font-weight: 700; letter-spacing: -0.5px; background: linear-gradient(135deg, var(--white), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+header .actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+.header-btn { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); display: flex; align-items: center; justify-content: center; font-size: 18px; transition: border-color 0.2s; }
+.header-btn:hover { border-color: var(--border-light); }
+.header-btn.danger { border-color: #e74c3c44; }
+
+.container { padding: 14px 12px 120px; max-width: 600px; margin: 0 auto; position: relative; z-index: 1; }
+
+.section { background: var(--card); border-radius: 12px; border: 1px solid var(--border); padding: 14px 14px 16px; margin-bottom: 12px; animation: fadeIn 0.3s ease; }
+.section h3 { font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--gold); margin-bottom: 12px; letter-spacing: -0.3px; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.toggle-btn { padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--muted); font-size: 14px; font-weight: 500; transition: all 0.2s; text-align: center; }
+.toggle-btn.active { border-color: var(--green); color: var(--green); background: #2ecc7111; }
+
+.input { width: 100%; padding: 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--card-alt); color: var(--white); font-size: 16px; outline: none; transition: border-color 0.2s; }
+.input:focus { border-color: var(--green); }
+.input::placeholder { color: var(--muted-dark); }
+
+.list-container { border-radius: 8px; border: 1px solid var(--border); overflow: hidden; max-height: 220px; overflow-y: auto; margin-top: 10px; }
+.list-label { padding: 7px 12px; background: var(--card-alt); font-family: var(--font-mono); font-size: 10px; color: var(--muted-dark); text-transform: uppercase; letter-spacing: 1px; }
+.list-item { padding: 14px; border-top: 1px solid var(--border); background: var(--card); color: var(--white); font-size: 14px; min-height: 48px; display: flex; align-items: center; cursor: pointer; transition: background 0.1s; }
+.list-item:hover { background: var(--card-alt); }
+
+.badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px; font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.5px; white-space: nowrap; }
+.badge.sm { padding: 1px 5px; font-size: 9px; }
+
+.clear-btn { width: 44px; height: 44px; border-radius: 8px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--muted); flex-shrink: 0; }
+
+.player-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.player-row .input { flex: 1; }
+
+.btn-add { padding: 12px 16px; border-radius: 10px; border: 1px solid var(--green-dark); color: var(--green); font-size: 14px; font-weight: 500; width: 100%; margin-top: 4px; text-align: center; transition: all 0.2s; }
+.btn-add:hover { background: #2ecc7111; }
+
+.btn-primary { width: 100%; padding: 16px 20px; border-radius: 12px; font-family: var(--font-display); font-size: 17px; font-weight: 700; letter-spacing: 0.5px; transition: all 0.3s; }
+.btn-primary.go { background: linear-gradient(135deg, var(--green-dark), var(--green)); color: var(--white); box-shadow: 0 4px 20px #2ecc7133; }
+.btn-primary.go:disabled { background: var(--card); color: var(--muted-dark); box-shadow: none; cursor: not-allowed; }
+.btn-primary.gold { background: linear-gradient(135deg, var(--gold-dim), var(--gold)); color: var(--bg); }
+.btn-primary.next { background: linear-gradient(135deg, var(--green-dark), var(--green)); color: var(--white); font-family: var(--font-body); font-size: 16px; font-weight: 600; min-height: 52px; }
+
+.hole-preview { display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 4px; margin-top: 10px; }
+.hole-chip { padding: 5px 0; text-align: center; border-radius: 6px; background: var(--card-alt); border: 1px solid var(--border); font-family: var(--font-mono); }
+.hole-chip .num { color: var(--muted-dark); font-size: 8px; line-height: 1; }
+.hole-chip .par { color: var(--white); font-weight: 600; font-size: 13px; }
+.hole-chip .yds { color: var(--muted); font-size: 9px; }
+
+/* Hole nav strip */
+.hole-nav { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 14px; -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none; }
+.hole-nav::-webkit-scrollbar { display: none; }
+.hole-nav-btn { min-width: 46px; height: 46px; border-radius: 10px; border: 2px solid var(--border); background: var(--card); color: var(--muted); font-family: var(--font-mono); font-size: 14px; font-weight: 700; flex-shrink: 0; position: relative; transition: all 0.2s; }
+.hole-nav-btn.current { border-color: var(--green); background: #2ecc7122; color: var(--green); }
+.hole-nav-btn.done { border-color: var(--green-muted); background: #1d6b4011; color: var(--green-muted); }
+.hole-nav-btn .tick { position: absolute; top: 4px; right: 4px; width: 5px; height: 5px; border-radius: 50%; background: var(--green); }
+
+.hole-card { background: var(--card); border-radius: 14px; border: 1px solid var(--border); padding: 16px 14px 18px; animation: slideUp 0.25s ease; }
+.hole-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.hole-header h2 { font-family: var(--font-display); font-size: 24px; font-weight: 800; }
+.hole-badges { display: flex; gap: 6px; margin-top: 5px; flex-wrap: wrap; }
+.nav-btn { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--border); background: var(--card-alt); font-size: 22px; font-weight: 700; display: flex; align-items: center; justify-content: center; transition: opacity 0.2s; }
+.nav-btn:disabled { opacity: 0.3; }
+.nav-arrows { display: flex; gap: 6px; }
+
+.par-edit { display: flex; align-items: center; gap: 6px; margin-bottom: 14px; padding: 8px 10px; background: var(--card-alt); border-radius: 8px; }
+.par-edit span { font-family: var(--font-mono); font-size: 11px; color: var(--muted-dark); margin-right: 4px; }
+.par-btn { width: 44px; height: 44px; border-radius: 10px; border: 2px solid var(--border); font-family: var(--font-mono); font-size: 16px; font-weight: 700; color: var(--muted); }
+.par-btn.active { border-color: var(--green); background: #2ecc7122; color: var(--green); }
+
+.player-score-block { padding: 14px 0 12px; }
+.player-score-block + .player-score-block { border-top: 1px solid var(--border); }
+.player-score-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.player-score-name { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
+.player-score-name span { font-weight: 600; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.player-score-val { font-family: var(--font-mono); font-size: 28px; font-weight: 700; line-height: 1; min-width: 36px; text-align: right; flex-shrink: 0; }
+
+.score-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.score-btn { height: 46px; border-radius: 10px; border: 2px solid var(--border); font-family: var(--font-mono); font-size: 17px; font-weight: 700; color: var(--muted); transition: all 0.12s; }
+
+.gps-btn { margin-top: 8px; padding: 12px; border-radius: 8px; border: 1px solid var(--border); width: 100%; background: var(--card-alt); color: var(--muted-dark); font-family: var(--font-mono); font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; transition: background 0.15s; }
+.gps-btn:active { background: var(--border); }
+
+.running-totals { margin-top: 12px; background: var(--card); border-radius: 10px; border: 1px solid var(--border); overflow: hidden; }
+.running-totals .header { padding: 8px 14px; background: var(--card-alt); font-family: var(--font-mono); font-size: 10px; color: var(--muted-dark); text-transform: uppercase; letter-spacing: 1px; display: flex; justify-content: space-between; }
+.running-totals .row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-top: 1px solid var(--border); min-height: 44px; }
+.running-totals .name { font-weight: 500; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 12px; }
+.running-totals .vals { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.running-totals .to-par { font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+.running-totals .total { font-family: var(--font-mono); font-size: 17px; font-weight: 700; color: var(--white); }
+
+/* Leaderboard */
+.lb-title { text-align: center; margin-bottom: 20px; }
+.lb-title h2 { font-family: var(--font-display); font-size: 26px; font-weight: 800; background: linear-gradient(135deg, var(--gold), var(--white)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.lb-title p { font-family: var(--font-mono); font-size: 11px; color: var(--muted-dark); margin-top: 4px; }
+
+.lb-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); padding: 14px 12px; margin-bottom: 10px; }
+.lb-card.first { border-color: #d4a84355; box-shadow: 0 0 24px #d4a84311; }
+.lb-card .top { display: flex; justify-content: space-between; align-items: center; }
+.lb-card .left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+.lb-card .pos { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 17px; font-weight: 800; flex-shrink: 0; border: 1px solid var(--border); background: var(--card-alt); color: var(--muted); }
+.lb-card.first .pos { background: #d4a84322; border-color: #d4a84344; color: var(--gold); }
+.lb-card .info { min-width: 0; flex: 1; }
+.lb-card .info .name { font-weight: 600; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-card .info .sub { font-family: var(--font-mono); font-size: 10px; color: var(--muted-dark); }
+.lb-card .right { text-align: right; flex-shrink: 0; margin-left: 8px; }
+.lb-card .to-par-big { font-family: var(--font-mono); font-size: 26px; font-weight: 700; line-height: 1; }
+.lb-card .strokes { font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-top: 2px; }
+.lb-card .score-strip { display: flex; gap: 3px; margin-top: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+.lb-card .score-pip { min-width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: var(--font-mono); font-size: 11px; font-weight: 600; }
+
+.scorecard-table-wrap { margin-top: 16px; background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+.scorecard-table-wrap .label { padding: 8px 14px; background: var(--card-alt); font-family: var(--font-mono); font-size: 10px; color: var(--muted-dark); text-transform: uppercase; letter-spacing: 1px; }
+.scorecard-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.scorecard-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 11px; }
+.scorecard-table th, .scorecard-table td { padding: 8px 4px; text-align: center; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.scorecard-table th { color: var(--muted); font-weight: 600; font-size: 10px; }
+.scorecard-table .sticky { position: sticky; left: 0; background: var(--card); z-index: 2; text-align: left; padding-left: 10px; max-width: 80px; overflow: hidden; text-overflow: ellipsis; }
+
+.feasibility { margin-top: 16px; padding: 12px 14px; background: var(--card-alt); border-radius: 10px; border: 1px solid var(--border); }
+.feasibility .tag { font-family: var(--font-mono); font-size: 10px; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.feasibility p { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.feasibility strong { color: var(--white); }
+.feasibility .count { font-size: 11px; color: var(--green); margin-top: 4px; font-family: var(--font-mono); }
+
+/* Archive */
+.archive-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); padding: 14px; margin-bottom: 10px; animation: fadeIn 0.3s ease; }
+.archive-card .top-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+.archive-card .course-name { font-weight: 600; font-size: 15px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.archive-card .date { font-family: var(--font-mono); font-size: 11px; color: var(--muted-dark); flex-shrink: 0; margin-left: 8px; }
+.archive-card .meta { font-family: var(--font-mono); font-size: 11px; color: var(--muted-dark); margin-bottom: 8px; }
+.archive-card .players { display: flex; flex-wrap: wrap; gap: 6px; }
+.archive-card .player-chip { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; background: var(--card-alt); border: 1px solid var(--border); }
+.archive-card .player-chip .pname { font-size: 13px; font-weight: 500; }
+.archive-card .player-chip .pscore { font-family: var(--font-mono); font-size: 13px; font-weight: 700; }
+.archive-card .card-actions { display: flex; gap: 6px; margin-top: 10px; }
+.archive-card .card-actions button { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; font-weight: 500; min-height: 44px; text-align: center; transition: all 0.15s; }
+.archive-card .card-actions .view-btn { color: var(--green); border-color: var(--green-dark); }
+.archive-card .card-actions .del-btn { color: var(--red); border-color: #e74c3c33; }
+
+.empty-state { text-align: center; padding: 40px 20px; color: var(--muted-dark); }
+.empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+.empty-state p { font-size: 14px; line-height: 1.5; }
+
+.spinner { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; padding: 12px 0; }
+.spinner .ring { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--green); border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="texture"></div>
+
+<header>
+  <div class="inner">
+    <div class="logo">
+      <div class="dot"></div>
+      <h1>THE CARD</h1>
+    </div>
+    <div class="actions" id="headerActions"></div>
+  </div>
+</header>
+
+<div class="container" id="app"></div>
+
+<script>
+const API_BASE = "https://api.bthree.uk/golf/v1";
+const LS_KEY = "golf_scorecard_current";
+const LS_ARCHIVE = "golf_scorecard_archive";
+
+// ─── STATE ───
+let state = {
+  screen: "setup",
+  clubs: [],
+  clubSearch: "",
+  selectedClub: null,
+  courses: [],
+  selectedCourse: null,
+  markers: [],
+  selectedMarker: null,
+  holes: [],
+  holeMode: 18,
+  nineHalf: "front",
+  players: [{ name: "", id: 1 }],
+  scores: {},
+  ballLocations: {},
+  currentHole: 0,
+  loading: false,
+  error: null,
+  manualCourse: false,
+  manualHoles: [],
+  // archive view
+  archiveView: null, // null or round object
+};
+
+let searchTimeout = null;
+let touchStartX = null;
+
+// ─── HELPERS ───
+function scoreColor(score, par) {
+  if (!score || !par) return "var(--muted)";
+  const d = score - par;
+  if (d <= -2) return "var(--eagle)";
+  if (d === -1) return "var(--birdie)";
+  if (d === 0) return "var(--par)";
+  if (d === 1) return "var(--bogey)";
+  return "var(--double)";
+}
+function scoreLabel(score, par) {
+  if (!score || !par) return "";
+  const d = score - par;
+  if (d <= -2) return "Eagle";
+  if (d === -1) return "Birdie";
+  if (d === 0) return "Par";
+  if (d === 1) return "Bogey";
+  if (d === 2) return "Double";
+  return "+" + d;
+}
+function toParStr(tp) { return tp === 0 ? "E" : tp > 0 ? "+" + tp : "" + tp; }
+function toParColor(tp) { return tp === 0 ? "var(--par)" : tp < 0 ? "var(--birdie)" : "var(--bogey)"; }
+
+function getActiveHoles() {
+  const src = state.manualCourse ? state.manualHoles : state.holes;
+  if (state.holeMode === 18) return src;
+  if (state.nineHalf === "front") return src.filter(h => h.number <= 9);
+  return src.filter(h => h.number > 9);
+}
+function validPlayers() { return state.players.filter(p => p.name.trim()); }
+function getParTotal() { return getActiveHoles().reduce((s, h) => s + h.par, 0); }
+function getPlayerTotal(pid) { const s = state.scores[pid] || {}; return Object.values(s).reduce((a, v) => a + (v || 0), 0); }
+function getPlayerToPar(pid) {
+  const s = state.scores[pid] || {};
+  let tp = 0;
+  getActiveHoles().forEach(h => { if (s[h.number]) tp += s[h.number] - h.par; });
+  return tp;
+}
+function getLeaderboard() {
+  const ah = getActiveHoles();
+  return validPlayers().map(p => ({
+    ...p,
+    total: getPlayerTotal(p.id),
+    toPar: getPlayerToPar(p.id),
+    holesPlayed: ah.filter(h => state.scores[p.id]?.[h.number]).length,
+    holeScores: ah.map(h => ({ hole: h.number, score: state.scores[p.id]?.[h.number] || 0, par: h.par })),
+    gpsCount: Object.values(state.ballLocations[p.id] || {}).flat().length,
+  })).sort((a, b) => a.toPar - b.toPar);
+}
+function badge(text, color, small) {
+  const sz = small ? "sm" : "";
+  return `<span class="badge ${sz}" style="color:${color};background:${color}18;border:1px solid ${color}33">${text}</span>`;
+}
+
+// ─── LOCALSTORAGE ───
+function saveCurrentRound() {
+  const data = {
+    selectedClub: state.selectedClub,
+    selectedCourse: state.selectedCourse,
+    selectedMarker: state.selectedMarker,
+    holes: state.holes,
+    holeMode: state.holeMode,
+    nineHalf: state.nineHalf,
+    players: state.players,
+    scores: state.scores,
+    ballLocations: state.ballLocations,
+    currentHole: state.currentHole,
+    manualCourse: state.manualCourse,
+    manualHoles: state.manualHoles,
+    startedAt: state.startedAt || new Date().toISOString(),
+  };
+  try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch {}
+}
+function loadCurrentRound() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    Object.assign(state, data);
+    state.screen = "scoring";
+    return true;
+  } catch { return false; }
+}
+function clearCurrentRound() {
+  try { localStorage.removeItem(LS_KEY); } catch {}
+}
+function archiveRound() {
+  const ah = getActiveHoles();
+  const round = {
+    id: Date.now(),
+    date: new Date().toISOString(),
+    club: state.selectedClub?.name || "Custom Course",
+    course: state.selectedCourse?.name || "",
+    marker: state.selectedMarker?.name || "",
+    holeMode: state.holeMode,
+    nineHalf: state.nineHalf,
+    parTotal: getParTotal(),
+    holes: ah,
+    players: validPlayers().map(p => ({
+      name: p.name,
+      id: p.id,
+      total: getPlayerTotal(p.id),
+      toPar: getPlayerToPar(p.id),
+      scores: Object.fromEntries(ah.map(h => [h.number, state.scores[p.id]?.[h.number] || 0])),
+    })),
+    gpsData: state.ballLocations,
+  };
+  try {
+    const archive = JSON.parse(localStorage.getItem(LS_ARCHIVE) || "[]");
+    archive.unshift(round);
+    localStorage.setItem(LS_ARCHIVE, JSON.stringify(archive));
+  } catch {}
+}
+function getArchive() {
+  try { return JSON.parse(localStorage.getItem(LS_ARCHIVE) || "[]"); } catch { return []; }
+}
+function deleteArchivedRound(id) {
+  try {
+    let archive = getArchive().filter(r => r.id !== id);
+    localStorage.setItem(LS_ARCHIVE, JSON.stringify(archive));
+  } catch {}
+}
+
+// ─── API ───
+async function searchClubs(query) {
+  if (query.length < 2) { state.clubs = []; render(); return; }
+  state.loading = true; state.error = null; render();
+  try {
+    const res = await fetch(`${API_BASE}/clubs?name=${encodeURIComponent(query)}`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    state.clubs = data.clubs || [];
+  } catch { state.error = "Couldn't reach the golf API. Try manual setup."; state.clubs = []; }
+  state.loading = false; render();
+}
+async function fetchCourses(clubId) {
+  state.loading = true; render();
+  try { const r = await fetch(`${API_BASE}/clubs/${clubId}/courses`); const d = await r.json(); state.courses = d.courses || []; }
+  catch { state.error = "Failed to load courses"; }
+  state.loading = false; render();
+}
+async function fetchMarkers(courseId) {
+  state.loading = true; render();
+  try { const r = await fetch(`${API_BASE}/courses/${courseId}/markers`); const d = await r.json(); state.markers = d.markers || []; }
+  catch { state.error = "Failed to load tee markers"; }
+  state.loading = false; render();
+}
+async function fetchHoles(markerId) {
+  state.loading = true; render();
+  try { const r = await fetch(`${API_BASE}/markers/${markerId}/holes`); const d = await r.json(); state.holes = (d.holes || []).sort((a, b) => a.number - b.number); }
+  catch { state.error = "Failed to load hole data"; }
+  state.loading = false; render();
+}
+
+// ─── ACTIONS ───
+function setScreen(s) { state.screen = s; state.archiveView = null; render(); }
+function newRound() {
+  // Archive current if in progress
+  if (state.screen === "scoring" || state.screen === "leaderboard") {
+    if (validPlayers().length && Object.keys(state.scores).length) archiveRound();
+    clearCurrentRound();
+  }
+  state = { ...state, screen: "setup", clubs: [], clubSearch: "", selectedClub: null, courses: [], selectedCourse: null, markers: [], selectedMarker: null, holes: [], players: [{ name: "", id: 1 }], scores: {}, ballLocations: {}, currentHole: 0, loading: false, error: null, manualCourse: false, manualHoles: [], archiveView: null };
+  render();
+}
+function startRound() {
+  const vp = validPlayers();
+  if (!vp.length) return;
+  if (state.manualCourse) {
+    const count = state.holeMode === 18 ? 18 : 9;
+    const start = state.holeMode === 9 && state.nineHalf === "back" ? 10 : 1;
+    state.manualHoles = Array.from({ length: count }, (_, i) => ({ number: start + i, par: 4, yards: 0, stroke_index: i + 1 }));
+  }
+  const init = {}; const initL = {};
+  vp.forEach(p => { init[p.id] = {}; initL[p.id] = {}; });
+  state.scores = init; state.ballLocations = initL; state.currentHole = 0;
+  state.startedAt = new Date().toISOString();
+  state.screen = "scoring";
+  saveCurrentRound(); render();
+}
+function setScore(pid, holeNum, val) {
+  if (!state.scores[pid]) state.scores[pid] = {};
+  state.scores[pid][holeNum] = val;
+  saveCurrentRound(); render();
+}
+function recordGPS(pid, holeNum) {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(pos => {
+    if (!state.ballLocations[pid]) state.ballLocations[pid] = {};
+    if (!state.ballLocations[pid][holeNum]) state.ballLocations[pid][holeNum] = [];
+    state.ballLocations[pid][holeNum].push({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
+    saveCurrentRound(); render();
+  }, () => {}, { enableHighAccuracy: true });
+}
+function finishRound() {
+  archiveRound(); clearCurrentRound(); state.screen = "leaderboard"; render();
+}
+
+// ─── RENDER ───
+function render() {
+  const app = document.getElementById("app");
+  const actions = document.getElementById("headerActions");
+
+  // Header actions
+  let ah = "";
+  if (state.screen === "scoring") ah = `<button class="header-btn" onclick="setScreen('leaderboard')">🏆</button><button class="header-btn" onclick="setScreen('archive')">📁</button><button class="header-btn danger" onclick="newRound()">✕</button>`;
+  else if (state.screen === "leaderboard") ah = `<button class="header-btn" onclick="setScreen('scoring')">⛳</button><button class="header-btn" onclick="setScreen('archive')">📁</button><button class="header-btn danger" onclick="newRound()">✕</button>`;
+  else if (state.screen === "archive") ah = `<button class="header-btn" onclick="setScreen('setup')">←</button>`;
+  else ah = `<button class="header-btn" onclick="setScreen('archive')">📁</button>`;
+  actions.innerHTML = ah;
+
+  if (state.screen === "setup") renderSetup(app);
+  else if (state.screen === "scoring") renderScoring(app);
+  else if (state.screen === "leaderboard") renderLeaderboard(app);
+  else if (state.screen === "archive") renderArchive(app);
+}
+
+// ─── SETUP ───
+function renderSetup(el) {
+  const canStart = validPlayers().length > 0 && (state.manualCourse || state.holes.length > 0);
+  let html = `<div style="animation:fadeIn .3s ease">`;
+
+  // Round Format
+  html += `<div class="section"><h3>Round Format</h3><div class="grid-2" style="margin-bottom:${state.holeMode === 9 ? '10px' : '0'}">`;
+  [18, 9].forEach(n => { html += `<button class="toggle-btn ${state.holeMode === n ? 'active' : ''}" onclick="state.holeMode=${n};render()">${n} Holes</button>`; });
+  html += `</div>`;
+  if (state.holeMode === 9) {
+    html += `<div class="grid-2">`;
+    [["front", "Front 9"], ["back", "Back 9"]].forEach(([v, l]) => { html += `<button class="toggle-btn ${state.nineHalf === v ? 'active' : ''}" onclick="state.nineHalf='${v}';render()">${l}</button>`; });
+    html += `</div>`;
+  }
+  html += `</div>`;
+
+  // Course
+  html += `<div class="section"><h3>Course</h3><div class="grid-2" style="margin-bottom:14px">
+    <button class="toggle-btn ${!state.manualCourse ? 'active' : ''}" onclick="state.manualCourse=false;state.error=null;render()">Search API</button>
+    <button class="toggle-btn ${state.manualCourse ? 'active' : ''}" onclick="state.manualCourse=true;render()">Manual</button></div>`;
+
+  if (!state.manualCourse) {
+    html += `<input class="input" type="text" placeholder="Search for a golf club..." value="${esc(state.clubSearch)}" oninput="onClubSearch(this.value)">`;
+    if (state.error) html += `<p style="color:var(--gold);font-size:13px;margin-top:8px">${esc(state.error)}</p>`;
+    if (state.loading) html += `<div class="spinner"><div class="ring"></div>Loading...</div>`;
+
+    if (state.clubs.length && !state.selectedClub) {
+      html += `<div class="list-container">`;
+      state.clubs.forEach(c => { html += `<div class="list-item" onclick="selectClub(${c.id})">${esc(c.name)}</div>`; });
+      html += `</div>`;
+    }
+    if (state.selectedClub) {
+      html += `<div style="margin-top:12px;animation:fadeIn .3s"><div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+        ${badge("CLUB", "var(--green)")}<span style="font-weight:600;font-size:14px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(state.selectedClub.name)}</span>
+        <button class="clear-btn" onclick="clearClub()">✕</button></div>`;
+
+      if (state.courses.length && !state.selectedCourse) {
+        html += renderPickerList("Select Course", state.courses, "selectCourse");
+      }
+      if (state.selectedCourse && !state.selectedMarker && state.markers.length) {
+        html += `<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap">${badge("COURSE", "var(--blue)")}<span style="font-size:14px">${esc(state.selectedCourse.name)}</span></div>`;
+        html += renderPickerList("Select Tee", state.markers, "selectMarker");
+      }
+      if (state.selectedMarker && state.holes.length) {
+        const ah = getActiveHoles();
+        html += `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+          ${badge("COURSE", "var(--blue)")}<span style="font-size:13px">${esc(state.selectedCourse.name)}</span>
+          ${badge("TEE", "var(--gold)")}<span style="font-size:13px">${esc(state.selectedMarker.name)}</span></div>`;
+        html += `<div class="hole-preview">`;
+        ah.forEach(h => { html += `<div class="hole-chip"><div class="num">H${h.number}</div><div class="par">P${h.par}</div>${h.yards ? `<div class="yds">${h.yards}y</div>` : ''}</div>`; });
+        html += `</div>`;
+      }
+      html += `</div>`;
+    }
+  } else {
+    html += `<p style="font-size:13px;color:var(--muted);line-height:1.5">Default par 4s — edit par per hole during the round.</p>`;
+  }
+  html += `</div>`;
+
+  // Players
+  html += `<div class="section"><h3>Players</h3>`;
+  state.players.forEach((p, i) => {
+    html += `<div class="player-row"><input class="input" type="text" placeholder="Player ${i + 1}" value="${esc(p.name)}" oninput="updatePlayerName(${i},this.value)">`;
+    if (state.players.length > 1) html += `<button class="clear-btn" onclick="removePlayer(${i})">✕</button>`;
+    html += `</div>`;
+  });
+  html += `<button class="btn-add" onclick="addPlayer()">+ Add Player</button></div>`;
+
+  // Start
+  html += `<button class="btn-primary go" ${canStart ? '' : 'disabled'} onclick="startRound()">Tee Off →</button>`;
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+function renderPickerList(label, items, fn) {
+  let h = `<div class="list-container" style="max-height:none"><div class="list-label">${label}</div>`;
+  items.forEach(it => { h += `<div class="list-item" onclick="${fn}(${it.id})">${esc(it.name || 'Option ' + it.id)}</div>`; });
+  return h + `</div>`;
+}
+
+// ─── SCORING ───
+function renderScoring(el) {
+  const ah = getActiveHoles();
+  const vp = validPlayers();
+  const hole = ah[state.currentHole];
+  if (!hole) return;
+
+  let html = `<div style="animation:fadeIn .3s">`;
+
+  // Hole nav
+  html += `<div class="hole-nav" id="holeNav">`;
+  ah.forEach((h, i) => {
+    const allDone = vp.every(p => state.scores[p.id]?.[h.number]);
+    const cls = i === state.currentHole ? "current" : allDone ? "done" : "";
+    html += `<button class="hole-nav-btn ${cls}" onclick="state.currentHole=${i};saveCurrentRound();render()">${h.number}${allDone && i !== state.currentHole ? '<div class="tick"></div>' : ''}</button>`;
+  });
+  html += `</div>`;
+
+  // Hole card
+  html += `<div class="hole-card" id="holeCard">`;
+  html += `<div class="hole-header"><div><h2>Hole ${hole.number}</h2><div class="hole-badges">
+    ${badge("PAR " + hole.par, "var(--gold)")}${hole.yards > 0 ? badge(hole.yards + " YDS", "var(--muted)") : ""}${hole.stroke_index > 0 ? badge("SI " + hole.stroke_index, "var(--muted-dark)") : ""}
+    </div></div><div class="nav-arrows">
+    <button class="nav-btn" ${state.currentHole === 0 ? 'disabled' : ''} onclick="state.currentHole--;saveCurrentRound();render()">‹</button>
+    <button class="nav-btn" ${state.currentHole === ah.length - 1 ? 'disabled' : ''} onclick="state.currentHole++;saveCurrentRound();render()">›</button></div></div>`;
+
+  // Manual par
+  if (state.manualCourse) {
+    html += `<div class="par-edit"><span>PAR</span>`;
+    [3, 4, 5].forEach(p => { html += `<button class="par-btn ${hole.par === p ? 'active' : ''}" onclick="setManualPar(${hole.number},${p})">${p}</button>`; });
+    html += `</div>`;
+  }
+
+  // Players
+  vp.forEach((player, pi) => {
+    const sc = state.scores[player.id]?.[hole.number] || 0;
+    const col = scoreColor(sc, hole.par);
+    html += `<div class="player-score-block">
+      <div class="player-score-header">
+        <div class="player-score-name"><span>${esc(player.name)}</span>${sc > 0 ? badge(scoreLabel(sc, hole.par), col, true) : ""}</div>
+        <div class="player-score-val" style="color:${sc ? col : 'var(--muted-dark)'}">${sc || "–"}</div>
+      </div>
+      <div class="score-grid">`;
+    for (let n = 1; n <= 10; n++) {
+      const c = scoreColor(n, hole.par);
+      const active = sc === n;
+      html += `<button class="score-btn" style="border-color:${active ? c : 'var(--border)'};background:${active ? c + '22' : 'transparent'};color:${active ? c : 'var(--muted)'}" onclick="setScore(${player.id},${hole.number},${n})">${n}</button>`;
+    }
+    html += `</div>`;
+    const gpsCount = state.ballLocations[player.id]?.[hole.number]?.length || 0;
+    html += `<button class="gps-btn" onclick="recordGPS(${player.id},${hole.number})">📍 Record Ball Position${gpsCount > 0 ? " " + badge(gpsCount + " shots", "var(--blue)", true) : ""}</button>`;
+    html += `</div>`;
+  });
+
+  // Next / Finish
+  html += `<div style="margin-top:12px">`;
+  if (state.currentHole < ah.length - 1) {
+    html += `<button class="btn-primary next" onclick="state.currentHole++;saveCurrentRound();render()">Next Hole →</button>`;
+  } else {
+    html += `<button class="btn-primary gold" onclick="finishRound()">🏆 Finish & View Leaderboard</button>`;
+  }
+  html += `</div></div>`;
+
+  // Running totals
+  html += `<div class="running-totals"><div class="header"><span>Running Totals</span><span>Par ${getParTotal()}</span></div>`;
+  vp.forEach(p => {
+    const tp = getPlayerToPar(p.id);
+    html += `<div class="row"><span class="name">${esc(p.name)}</span><div class="vals"><span class="to-par" style="color:${toParColor(tp)}">${toParStr(tp)}</span><span class="total">${getPlayerTotal(p.id)}</span></div></div>`;
+  });
+  html += `</div></div>`;
+
+  el.innerHTML = html;
+
+  // Scroll active hole into view
+  requestAnimationFrame(() => {
+    const nav = document.getElementById("holeNav");
+    if (nav && nav.children[state.currentHole]) {
+      nav.children[state.currentHole].scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    }
+    // Swipe
+    const card = document.getElementById("holeCard");
+    if (card) {
+      card.addEventListener("touchstart", e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+      card.addEventListener("touchend", e => {
+        if (touchStartX === null) return;
+        const diff = touchStartX - e.changedTouches[0].clientX;
+        if (Math.abs(diff) > 60) {
+          if (diff > 0 && state.currentHole < ah.length - 1) { state.currentHole++; saveCurrentRound(); render(); }
+          if (diff < 0 && state.currentHole > 0) { state.currentHole--; saveCurrentRound(); render(); }
+        }
+        touchStartX = null;
+      }, { passive: true });
+    }
+  });
+}
+
+// ─── LEADERBOARD ───
+function renderLeaderboard(el) {
+  const ah = getActiveHoles();
+  const lb = getLeaderboard();
+  const clubName = state.selectedClub?.name || "Custom Course";
+
+  let html = `<div style="animation:slideUp .35s">`;
+  html += `<div class="lb-title"><h2>Leaderboard</h2><p>${esc(clubName)} · ${state.holeMode} Holes · Par ${getParTotal()}</p></div>`;
+
+  lb.forEach((p, i) => {
+    const tpCol = toParColor(p.toPar);
+    html += `<div class="lb-card ${i === 0 ? 'first' : ''}" style="animation:slideUp ${0.25 + i * 0.08}s ease">
+      <div class="top"><div class="left"><div class="pos">${i + 1}</div><div class="info"><div class="name">${esc(p.name)}</div><div class="sub">${p.holesPlayed}/${ah.length} holes${p.gpsCount > 0 ? ` · ${p.gpsCount} GPS` : ""}</div></div></div>
+      <div class="right"><div class="to-par-big" style="color:${tpCol}">${toParStr(p.toPar)}</div><div class="strokes">${p.total} strokes</div></div></div>
+      <div class="score-strip">`;
+    p.holeScores.forEach(s => {
+      const c = s.score ? scoreColor(s.score, s.par) : "var(--muted-dark)";
+      html += `<div class="score-pip" style="background:${s.score ? c + '18' : 'var(--card-alt)'};border:1px solid ${s.score ? c + '33' : 'var(--border)'};color:${c}">${s.score || "–"}</div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  // Full scorecard table
+  html += `<div class="scorecard-table-wrap"><div class="label">Full Scorecard</div><div class="scorecard-table-scroll">
+    <table class="scorecard-table" style="min-width:${ah.length * 34 + 120}px"><thead><tr><th class="sticky">Hole</th>`;
+  ah.forEach(h => { html += `<th>${h.number}</th>`; });
+  html += `<th style="color:var(--gold)">TOT</th><th style="color:var(--gold)">+/-</th></tr>`;
+  html += `<tr><td class="sticky">Par</td>`;
+  ah.forEach(h => { html += `<td style="color:var(--muted-dark)">${h.par}</td>`; });
+  html += `<td style="color:var(--muted-dark)">${getParTotal()}</td><td></td></tr></thead><tbody>`;
+  validPlayers().forEach(p => {
+    const tp = getPlayerToPar(p.id);
+    html += `<tr><td class="sticky" style="font-weight:600;color:var(--white)">${esc(p.name)}</td>`;
+    ah.forEach(h => {
+      const s = state.scores[p.id]?.[h.number];
+      html += `<td style="color:${s ? scoreColor(s, h.par) : 'var(--muted-dark)'};font-weight:600">${s || "–"}</td>`;
+    });
+    html += `<td style="font-weight:700;color:var(--white)">${getPlayerTotal(p.id)}</td><td style="font-weight:700;color:${toParColor(tp)}">${toParStr(tp)}</td></tr>`;
+  });
+  html += `</tbody></table></div></div>`;
+
+  // GPS note
+  const totalGPS = validPlayers().reduce((s, p) => s + Object.values(state.ballLocations[p.id] || {}).flat().length, 0);
+  html += `<div class="feasibility"><div class="tag">📍 Shot Tracking Ready</div><p>GPS capture via Geolocation API. Next: <strong>Leaflet + OpenStreetMap</strong> (free) or <strong>Google Maps JS API</strong> for satellite view.</p>`;
+  if (totalGPS > 0) html += `<p class="count">✓ ${totalGPS} GPS coordinates captured</p>`;
+  html += `</div></div>`;
+
+  el.innerHTML = html;
+}
+
+// ─── ARCHIVE ───
+function renderArchive(el) {
+  const archive = getArchive();
+
+  if (state.archiveView) return renderArchiveDetail(el, state.archiveView);
+
+  let html = `<div style="animation:fadeIn .3s">`;
+  html += `<div class="lb-title"><h2>Round Archive</h2><p>${archive.length} saved round${archive.length !== 1 ? 's' : ''}</p></div>`;
+
+  if (!archive.length) {
+    html += `<div class="empty-state"><div class="icon">⛳</div><p>No rounds archived yet.<br>Complete a round and it'll appear here.</p></div>`;
+  }
+
+  archive.forEach(r => {
+    const d = new Date(r.date);
+    const dateStr = d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+    const winner = r.players.sort((a, b) => a.toPar - b.toPar)[0];
+
+    html += `<div class="archive-card">
+      <div class="top-row"><div class="course-name">${esc(r.club)}</div><div class="date">${dateStr}</div></div>
+      <div class="meta">${r.course ? esc(r.course) + " · " : ""}${r.holeMode} holes · Par ${r.parTotal}</div>
+      <div class="players">`;
+    r.players.sort((a, b) => a.toPar - b.toPar).forEach(p => {
+      const col = toParColor(p.toPar);
+      html += `<div class="player-chip"><span class="pname">${esc(p.name)}</span><span class="pscore" style="color:${col}">${toParStr(p.toPar)}</span></div>`;
+    });
+    html += `</div><div class="card-actions">
+      <button class="view-btn" onclick="viewArchivedRound(${r.id})">View Scorecard</button>
+      <button class="del-btn" onclick="confirmDeleteRound(${r.id})">Delete</button></div></div>`;
+  });
+
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+function renderArchiveDetail(el, round) {
+  let html = `<div style="animation:fadeIn .3s">`;
+  const d = new Date(round.date);
+  const dateStr = d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+
+  html += `<div style="margin-bottom:16px"><button class="toggle-btn" style="padding:10px 16px" onclick="state.archiveView=null;render()">← Back to Archive</button></div>`;
+  html += `<div class="lb-title"><h2>${esc(round.club)}</h2><p>${round.course ? esc(round.course) + " · " : ""}${dateStr} · ${round.holeMode} holes · Par ${round.parTotal}</p></div>`;
+
+  // Player cards
+  round.players.sort((a, b) => a.toPar - b.toPar).forEach((p, i) => {
+    const tpCol = toParColor(p.toPar);
+    const holesScored = Object.values(p.scores).filter(v => v > 0).length;
+    html += `<div class="lb-card ${i === 0 ? 'first' : ''}">
+      <div class="top"><div class="left"><div class="pos">${i + 1}</div><div class="info"><div class="name">${esc(p.name)}</div><div class="sub">${holesScored}/${round.holes.length} holes</div></div></div>
+      <div class="right"><div class="to-par-big" style="color:${tpCol}">${toParStr(p.toPar)}</div><div class="strokes">${p.total} strokes</div></div></div>
+      <div class="score-strip">`;
+    round.holes.forEach(h => {
+      const s = p.scores[h.number] || 0;
+      const c = s ? scoreColor(s, h.par) : "var(--muted-dark)";
+      html += `<div class="score-pip" style="background:${s ? c + '18' : 'var(--card-alt)'};border:1px solid ${s ? c + '33' : 'var(--border)'};color:${c}">${s || "–"}</div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  // Full table
+  html += `<div class="scorecard-table-wrap"><div class="label">Full Scorecard</div><div class="scorecard-table-scroll">
+    <table class="scorecard-table" style="min-width:${round.holes.length * 34 + 120}px"><thead><tr><th class="sticky">Hole</th>`;
+  round.holes.forEach(h => { html += `<th>${h.number}</th>`; });
+  html += `<th style="color:var(--gold)">TOT</th><th style="color:var(--gold)">+/-</th></tr>`;
+  html += `<tr><td class="sticky">Par</td>`;
+  round.holes.forEach(h => { html += `<td style="color:var(--muted-dark)">${h.par}</td>`; });
+  html += `<td style="color:var(--muted-dark)">${round.parTotal}</td><td></td></tr></thead><tbody>`;
+  round.players.sort((a, b) => a.toPar - b.toPar).forEach(p => {
+    const tpCol = toParColor(p.toPar);
+    html += `<tr><td class="sticky" style="font-weight:600;color:var(--white)">${esc(p.name)}</td>`;
+    round.holes.forEach(h => {
+      const s = p.scores[h.number] || 0;
+      html += `<td style="color:${s ? scoreColor(s, h.par) : 'var(--muted-dark)'};font-weight:600">${s || "–"}</td>`;
+    });
+    html += `<td style="font-weight:700;color:var(--white)">${p.total}</td><td style="font-weight:700;color:${tpCol}">${toParStr(p.toPar)}</td></tr>`;
+  });
+  html += `</tbody></table></div></div></div>`;
+
+  el.innerHTML = html;
+}
+
+// ─── EVENT HANDLERS ───
+function onClubSearch(val) {
+  state.clubSearch = val;
+  state.selectedClub = null; state.selectedCourse = null; state.selectedMarker = null; state.holes = [];
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => searchClubs(val), 400);
+  render();
+}
+function selectClub(id) {
+  state.selectedClub = state.clubs.find(c => c.id === id);
+  fetchCourses(id);
+}
+function clearClub() {
+  state.selectedClub = null; state.clubSearch = ""; state.courses = [];
+  state.selectedCourse = null; state.markers = []; state.selectedMarker = null; state.holes = [];
+  render();
+}
+function selectCourse(id) {
+  state.selectedCourse = state.courses.find(c => c.id === id);
+  fetchMarkers(id);
+}
+function selectMarker(id) {
+  state.selectedMarker = state.markers.find(m => m.id === id);
+  fetchHoles(id);
+}
+function updatePlayerName(i, val) {
+  state.players[i] = { ...state.players[i], name: val };
+  render();
+}
+function removePlayer(i) {
+  state.players = state.players.filter((_, j) => j !== i);
+  render();
+}
+function addPlayer() {
+  state.players.push({ name: "", id: Date.now() });
+  render();
+}
+function setManualPar(holeNum, par) {
+  state.manualHoles = state.manualHoles.map(h => h.number === holeNum ? { ...h, par } : h);
+  saveCurrentRound(); render();
+}
+function viewArchivedRound(id) {
+  state.archiveView = getArchive().find(r => r.id === id) || null;
+  render();
+}
+function confirmDeleteRound(id) {
+  if (confirm("Delete this round permanently?")) {
+    deleteArchivedRound(id);
+    render();
+  }
+}
+function esc(s) { if (!s) return ""; const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+// ─── INIT ───
+(function init() {
+  if (!loadCurrentRound()) {
+    render();
+  } else {
+    render();
+  }
+})();
+</script>
+</body>
+</html>
