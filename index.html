@@ -247,8 +247,9 @@ let state = {
   currentHole: 0,
   loading: false,
   error: null,
-  manualCourse: false,
+  manualCourse: true,
   manualHoles: [],
+  courseName: "",
   // archive view
   archiveView: null, // null or round object
 };
@@ -325,6 +326,7 @@ function saveCurrentRound() {
     currentHole: state.currentHole,
     manualCourse: state.manualCourse,
     manualHoles: state.manualHoles,
+    courseName: state.courseName,
     startedAt: state.startedAt || new Date().toISOString(),
   };
   try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch {}
@@ -347,7 +349,7 @@ function archiveRound() {
   const round = {
     id: Date.now(),
     date: new Date().toISOString(),
-    club: state.selectedClub?.name || "Custom Course",
+    club: state.selectedClub?.name || state.courseName || "Custom Course",
     course: state.selectedCourse?.name || "",
     marker: state.selectedMarker?.name || "",
     holeMode: state.holeMode,
@@ -388,7 +390,7 @@ async function searchClubs(query) {
     if (!res.ok) throw new Error();
     const data = await res.json();
     state.clubs = data.clubs || [];
-  } catch { state.error = "Couldn't reach the golf API. Try manual setup."; state.clubs = []; }
+  } catch { state.error = "Couldn't reach the golf API — it may be temporarily down. Use the back button above to set up manually."; state.clubs = []; }
   state.loading = false; render();
 }
 async function fetchCourses(clubId) {
@@ -418,7 +420,7 @@ function newRound() {
     if (validPlayers().length && Object.keys(state.scores).length) archiveRound();
     clearCurrentRound();
   }
-  state = { ...state, screen: "setup", clubs: [], clubSearch: "", selectedClub: null, courses: [], selectedCourse: null, markers: [], selectedMarker: null, holes: [], players: [{ name: "", id: 1 }], scores: {}, ballLocations: {}, currentHole: 0, loading: false, error: null, manualCourse: false, manualHoles: [], archiveView: null };
+  state = { ...state, screen: "setup", clubs: [], clubSearch: "", selectedClub: null, courses: [], selectedCourse: null, markers: [], selectedMarker: null, holes: [], players: [{ name: "", id: 1 }], scores: {}, ballLocations: {}, currentHole: 0, loading: false, error: null, manualCourse: true, manualHoles: [], courseName: "", archiveView: null };
   render();
 }
 function startRound() {
@@ -490,11 +492,17 @@ function renderSetup(el) {
   html += `</div>`;
 
   // Course
-  html += `<div class="section"><h3>Course</h3><div class="grid-2" style="margin-bottom:14px">
-    <button class="toggle-btn ${!state.manualCourse ? 'active' : ''}" onclick="state.manualCourse=false;state.error=null;render()">Search API</button>
-    <button class="toggle-btn ${state.manualCourse ? 'active' : ''}" onclick="state.manualCourse=true;render()">Manual</button></div>`;
+  html += `<div class="section"><h3>Course</h3>`;
 
-  if (!state.manualCourse) {
+  if (state.manualCourse) {
+    // Manual mode — primary
+    html += `<input class="input" type="text" placeholder="Course name (optional)" value="${esc(state.courseName)}" oninput="state.courseName=this.value" style="margin-bottom:10px">`;
+    html += `<p style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:12px">Par defaults to 4 per hole — you can edit each hole's par during the round.</p>`;
+    html += `<button class="toggle-btn" style="width:100%;font-size:13px;color:var(--muted-dark);border-color:var(--border)" onclick="state.manualCourse=false;state.error=null;render()">🔍 Search for course data instead (UK courses)</button>`;
+  } else {
+    // API search mode
+    html += `<button class="toggle-btn" style="width:100%;margin-bottom:12px;font-size:13px;color:var(--muted-dark)" onclick="state.manualCourse=true;render()">← Back to manual setup</button>`;
+    html += `<p style="font-size:12px;color:var(--muted-dark);margin-bottom:10px">Search the golf course database for hole data (par, yardage, stroke index). UK courses only. API may be intermittently unavailable.</p>`;
     html += `<div style="display:flex;gap:8px"><input class="input" style="flex:1" type="text" placeholder="Search for a golf club..." value="${esc(state.clubSearch)}" oninput="onClubSearch(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();triggerClubSearch()}">
       <button class="toggle-btn active" style="flex-shrink:0;padding:12px 18px;min-width:70px" onclick="triggerClubSearch()">Search</button></div>`;
     if (state.error) html += `<p style="color:var(--gold);font-size:13px;margin-top:8px">${esc(state.error)}</p>`;
@@ -528,8 +536,6 @@ function renderSetup(el) {
       }
       html += `</div>`;
     }
-  } else {
-    html += `<p style="font-size:13px;color:var(--muted);line-height:1.5">Default par 4s — edit par per hole during the round.</p>`;
   }
   html += `</div>`;
 
@@ -654,7 +660,7 @@ function renderScoring(el) {
 function renderLeaderboard(el) {
   const ah = getActiveHoles();
   const lb = getLeaderboard();
-  const clubName = state.selectedClub?.name || "Custom Course";
+  const clubName = state.selectedClub?.name || state.courseName || "Custom Course";
 
   let html = `<div style="animation:slideUp .35s">`;
   html += `<div class="lb-title"><h2>Leaderboard</h2><p>${esc(clubName)} · ${state.holeMode} Holes · Par ${getParTotal()}</p></div>`;
