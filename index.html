@@ -222,7 +222,9 @@ header .actions { display: flex; gap: 6px; flex-shrink: 0; }
 <div class="container" id="app"></div>
 
 <script>
-const API_BASE = "https://api.bthree.uk/golf/v1";
+const CORS_PROXY = "https://corsproxy.io/?url=";
+const API_RAW = "https://api.bthree.uk/golf/v1";
+function apiUrl(path) { return CORS_PROXY + encodeURIComponent(API_RAW + path); }
 const LS_KEY = "golf_scorecard_current";
 const LS_ARCHIVE = "golf_scorecard_archive";
 
@@ -382,7 +384,7 @@ async function searchClubs(query) {
   if (query.length < 2) { state.clubs = []; render(); return; }
   state.loading = true; state.error = null; render();
   try {
-    const res = await fetch(`${API_BASE}/clubs?name=${encodeURIComponent(query)}`);
+    const res = await fetch(apiUrl(`/clubs?name=${encodeURIComponent(query)}`));
     if (!res.ok) throw new Error();
     const data = await res.json();
     state.clubs = data.clubs || [];
@@ -391,19 +393,19 @@ async function searchClubs(query) {
 }
 async function fetchCourses(clubId) {
   state.loading = true; render();
-  try { const r = await fetch(`${API_BASE}/clubs/${clubId}/courses`); const d = await r.json(); state.courses = d.courses || []; }
+  try { const r = await fetch(apiUrl(`/clubs/${clubId}/courses`)); const d = await r.json(); state.courses = d.courses || []; }
   catch { state.error = "Failed to load courses"; }
   state.loading = false; render();
 }
 async function fetchMarkers(courseId) {
   state.loading = true; render();
-  try { const r = await fetch(`${API_BASE}/courses/${courseId}/markers`); const d = await r.json(); state.markers = d.markers || []; }
+  try { const r = await fetch(apiUrl(`/courses/${courseId}/markers`)); const d = await r.json(); state.markers = d.markers || []; }
   catch { state.error = "Failed to load tee markers"; }
   state.loading = false; render();
 }
 async function fetchHoles(markerId) {
   state.loading = true; render();
-  try { const r = await fetch(`${API_BASE}/markers/${markerId}/holes`); const d = await r.json(); state.holes = (d.holes || []).sort((a, b) => a.number - b.number); }
+  try { const r = await fetch(apiUrl(`/markers/${markerId}/holes`)); const d = await r.json(); state.holes = (d.holes || []).sort((a, b) => a.number - b.number); }
   catch { state.error = "Failed to load hole data"; }
   state.loading = false; render();
 }
@@ -493,7 +495,8 @@ function renderSetup(el) {
     <button class="toggle-btn ${state.manualCourse ? 'active' : ''}" onclick="state.manualCourse=true;render()">Manual</button></div>`;
 
   if (!state.manualCourse) {
-    html += `<input class="input" type="text" placeholder="Search for a golf club..." value="${esc(state.clubSearch)}" oninput="onClubSearch(this.value)">`;
+    html += `<div style="display:flex;gap:8px"><input class="input" style="flex:1" type="text" placeholder="Search for a golf club..." value="${esc(state.clubSearch)}" oninput="onClubSearch(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();triggerClubSearch()}">
+      <button class="toggle-btn active" style="flex-shrink:0;padding:12px 18px;min-width:70px" onclick="triggerClubSearch()">Search</button></div>`;
     if (state.error) html += `<p style="color:var(--gold);font-size:13px;margin-top:8px">${esc(state.error)}</p>`;
     if (state.loading) html += `<div class="spinner"><div class="ring"></div>Loading...</div>`;
 
@@ -782,9 +785,11 @@ function renderArchiveDetail(el, round) {
 function onClubSearch(val) {
   state.clubSearch = val;
   state.selectedClub = null; state.selectedCourse = null; state.selectedMarker = null; state.holes = [];
-  clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(() => searchClubs(val), 400);
-  render();
+}
+function triggerClubSearch() {
+  if (state.clubSearch.trim().length < 2) { state.error = "Enter at least 2 characters to search."; render(); return; }
+  state.clubs = []; state.error = null;
+  searchClubs(state.clubSearch.trim());
 }
 function selectClub(id) {
   state.selectedClub = state.clubs.find(c => c.id === id);
